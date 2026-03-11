@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
-import productRoutes from "./routes/adminRoutes/product.routes.js";
 import adminRouter from "./routes/adminRoutes/index.js";
 import webRouter from "./routes/webRoutes/index.js";
 
@@ -21,6 +20,5 @@ app.use(morgan("dev"));
 
 app.use("/api/admin", adminRouter);
 app.use("/api/web", webRouter);
-app.use("/api/products", productRoutes);
 
 export default app;

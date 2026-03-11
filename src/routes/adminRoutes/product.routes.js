@@ -13,10 +13,10 @@ import {
 const productRouter = express.Router();
 const upload = multer({ storage });
 
-productRouter.post("/add-product", upload.array("images", 5), createProduct);
+productRouter.post("/add-product", protect, upload.array("images", 5), createProduct);
 productRouter.get("/get-products", getProducts);
 productRouter.get("/get-product/:id", getProductById);
-productRouter.put("/update-product/:id",upload.array("images", 5), updateProduct);
-productRouter.delete("/delete-product/:id", deleteProduct);
+productRouter.put("/update-product/:id", protect, upload.array("images", 5), updateProduct);
+productRouter.delete("/delete-product/:id", protect, deleteProduct);
 
 export default productRouter;
