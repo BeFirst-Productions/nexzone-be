@@ -326,7 +326,40 @@ export const getAllCategories = async (req, res) => {
   }
 };
 
+export const getAccessoriesSubcategories = async (req, res) => {
+  try {
+    // find the accessories category
+    const accessories = await Category.findOne({ slug: "accessories" });
 
+    if (!accessories) {
+      return res.status(404).json({
+        success: false,
+        message: "Accessories category not found"
+      });
+    }
+
+    // fetch all subcategories
+    const subcategories = await Category.find({
+      parent: accessories._id
+    })
+      .sort({ order: 1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: subcategories
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch accessories subcategories",
+      error: error.message
+    });
+
+  }
+};
 
 /* ================================
    UPDATE CATEGORY ORDER (Drag & Drop)

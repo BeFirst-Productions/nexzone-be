@@ -77,7 +77,31 @@ export const getProducts = async (req, res) => {
   }
 };
 
+export const getRecentProducts = async (req, res) => {
+  try {
 
+    const recentProducts = await products
+      .find({})
+      .populate("category", "name slug")
+      .sort({ createdAt: -1 }) // newest first
+      .limit(8)
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: recentProducts,
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch recent products",
+      error: error.message,
+    });
+
+  }
+};
 
 // DELETE PRODUCT
 export const deleteProduct = async (req, res) => {
