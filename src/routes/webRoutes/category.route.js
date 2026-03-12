@@ -3,9 +3,7 @@ import { getAllCategories, getCategories, getCategoryById } from "../../controll
 
 const categoryRouter = express.Router();
 
-// Public routes for website
-categoryRouter.get("/get-categories", getCategories);
+
 categoryRouter.get("/get-all-categories", getAllCategories);
-categoryRouter.get("/get-category/:id", getCategoryById);
 
 export default categoryRouter;
