@@ -9,7 +9,7 @@ const productRouter = express.Router();
 
 productRouter.get("/get-products", getProducts);
 productRouter.get("/get-product/:id", getProductById);
-productRouter.get("/recent-products", getRecentProducts);
+productRouter.get("/recent-products", getRecentProducts);   
 
 
 export default productRouter;

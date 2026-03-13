@@ -1,11 +1,12 @@
 import { cloudinary } from "../config/cloudinary.js";
 import products from "../models/products.js";
+import Category from "../models/category.js";
 
 
 // CREATE PRODUCT
 export const createProduct = async (req, res) => {
   try {
-    console.log(req.body);
+    
     
     const images =
       req.files?.map((file) => ({
@@ -45,14 +46,31 @@ export const getProducts = async (req, res) => {
 
     const filter = {};
 
-    // filter by category
     if (req.query.category) {
-      filter.category = req.query.category;
+
+      // find subcategories
+      const subCategories = await Category.find({
+        parent: req.query.category
+      }).select("_id");
+
+      const categoryIds = [
+        req.query.category,
+        ...subCategories.map(c => c._id)
+      ];
+
+      filter.category = { $in: categoryIds };
     }
 
     const [productList, totalProducts] = await Promise.all([
       products.find(filter)
-        .populate("category", "name slug")
+        .populate({
+          path: "category",
+          select: "name slug parent",
+          populate: {
+            path: "parent",
+            select: "name slug"
+          }
+        })
         .limit(limit)
         .skip(skip)
         .sort({ createdAt: -1 }),
@@ -82,7 +100,7 @@ export const getRecentProducts = async (req, res) => {
 
     const recentProducts = await products
       .find({})
-      .populate("category", "name slug")
+      .populate("category", "name slug parent")
       .sort({ createdAt: -1 }) // newest first
       .limit(8)
       .lean();
@@ -195,7 +213,7 @@ export const getProductById = async (req, res) => {
 
     const product = await products
       .findById(req.params.id)
-      .populate("category", "name slug");
+      .populate("category", "name slug parent");
 
     if (!product) {
       return res.status(404).json({
