@@ -169,23 +169,49 @@ export const updateProduct = async (req, res) => {
       });
     }
 
-    let newImages = [];
-
-    if (req.files && req.files.length > 0) {
-      newImages = req.files.map((file) => ({
-        url: file.path,
-        public_id: file.filename,
-      }));
+    // Parse the list of existing image URLs the frontend wants to keep
+    let keptImageUrls = [];
+    if (req.body.existingImages) {
+      try {
+        keptImageUrls = JSON.parse(req.body.existingImages);
+      } catch {
+        keptImageUrls = [];
+      }
     }
 
-    // merge old + new images
-    const updatedImages = [...product.images, ...newImages];
+    // Figure out which old images were removed by the user
+    const removedImages = product.images.filter(
+      (img) => !keptImageUrls.includes(img.url)
+    );
+
+    // Delete removed images from Cloudinary
+    for (const img of removedImages) {
+      if (img.public_id) {
+        await cloudinary.uploader.destroy(img.public_id);
+      }
+    }
+
+    // Keep only the images the frontend still wants
+    const keptImages = product.images.filter((img) =>
+      keptImageUrls.includes(img.url)
+    );
+
+    // Append any newly uploaded images
+    const newImages = (req.files || []).map((file) => ({
+      url: file.path,
+      public_id: file.filename,
+    }));
+
+    const finalImages = [...keptImages, ...newImages];
+
+    // Remove existingImages from req.body so it doesn't get saved as a field
+    const { existingImages, ...bodyWithoutExisting } = req.body;
 
     const updatedProduct = await products.findByIdAndUpdate(
       req.params.id,
       {
-        ...req.body,
-        images: updatedImages,
+        ...bodyWithoutExisting,
+        images: finalImages,
       },
       { new: true }
     );
@@ -232,6 +258,42 @@ export const getProductById = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch product",
+      error: error.message,
+    });
+  }
+};
+
+// SEARCH PRODUCTS
+export const searchProducts = async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required",
+      });
+    }
+
+    const searchRegex = new RegExp(query, "i"); // Case-insensitive search
+
+    const searchResults = await products.find({
+      $or: [
+        { name: searchRegex },
+        { shortDescription: searchRegex },
+        { description: searchRegex },
+      ],
+    }).populate("category", "name slug parent");
+
+    res.status(200).json({
+      success: true,
+      message: "Products fetched successfully",
+      data: searchResults,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to search products",
       error: error.message,
     });
   }
