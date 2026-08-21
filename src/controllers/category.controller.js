@@ -19,7 +19,20 @@ export const createCategory = async (req, res) => {
       });
     }
 
-    const slug = slugify(name);
+    // Generate a random slug
+    let baseSlug = slugify(name);
+    let slug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+
+    // Ensure slug uniqueness just in case
+    let isSlugUnique = false;
+    while (!isSlugUnique) {
+      const existingSlug = await Category.findOne({ slug });
+      if (existingSlug) {
+        slug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+      } else {
+        isSlugUnique = true;
+      }
+    }
 
     // Auto-generate code
     let finalCode = "";
@@ -132,7 +145,31 @@ export const updateCategory = async (req, res) => {
 
     const { name, parent, code, order } = req.body;
 
-    const slug = slugify(name);
+    const existingCategory = await Category.findById(req.params.id);
+    if (!existingCategory) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found"
+      });
+    }
+
+    let slug = existingCategory.slug;
+
+    // Only generate a new random slug if the name has changed
+    if (existingCategory.name !== name) {
+      let baseSlug = slugify(name);
+      slug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+
+      let isSlugUnique = false;
+      while (!isSlugUnique) {
+        const existingSlug = await Category.findOne({ slug, _id: { $ne: req.params.id } });
+        if (existingSlug) {
+          slug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+        } else {
+          isSlugUnique = true;
+        }
+      }
+    }
 
     const category = await Category.findByIdAndUpdate(
       req.params.id,
